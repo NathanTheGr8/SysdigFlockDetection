@@ -65,8 +65,8 @@ test4(){
 run() {
 	local tempDir sysdig_pid
 	tempDir=$(mktemp -d -t sysdig.XXXXXX)
-	sysdig -j "proc.apid=$BASHPID" >"$tempDir/out.json" & sysdig_pid=$!
-	sleep 1
+	sysdig -j "proc.pid=$BASHPID or proc.apid=$BASHPID" >"$tempDir/out.json" & sysdig_pid=$!
+	while [ ! -s "$tempDir/out.json" ]; do sleep 0.5; done
 	(
 		"$@" & testpid=$!
 		sleep 5
@@ -79,3 +79,5 @@ run() {
 }
 
 run test1
+run test2
+

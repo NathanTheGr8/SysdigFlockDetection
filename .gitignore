@@ -11,3 +11,8 @@
 # Maven Build Products
 target
 dependency-reduced-pom.xml
+
+
+#bash products
+bash_scripts/.TestCases.swp
+bash_scripts/foo.bar
