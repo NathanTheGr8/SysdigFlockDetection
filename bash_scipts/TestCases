@@ -1,0 +1,80 @@
+# sysDig Test Cases
+
+# Test Case 1
+# A grabs a lock
+# B opens same file, tries to grab a lock
+# Contention
+# 0 = succesfull, 1 or more = number of contentions
+test1_result=1
+test1(){
+	exec 3>foo.bar
+	flock -x 3
+	exec 4>foo.bar
+	flock -x 4
+}
+
+# Test Case 2
+# A grabs a lock
+# forcks A1
+# A1 unlocks the lock
+# B opens file, grabs lock
+# succeeds
+# 0 = succesfull, 1 or more = number of contentions
+test2_result=0
+test2(){
+	exec 3>foo.bar
+	exec 4>foo.bar
+	flock -x 3
+	(
+		flock -u 3
+	)
+	flock -x 4
+	
+}
+
+# Test Case 3
+# A opens a file on FD 3
+# A uses fudp() to make FD4 a copy
+# A grabs an exculsive lock on FD 3
+# A grabs an exclusive lock on FD 4
+# Succeeds
+# 0 = succesfull, 1 or more = number of contentions
+test3_result=0
+test3(){
+	exec 3>foo.bar
+	exec 4>&3
+	flock -x 3
+	flock -x 4
+}
+
+# Test Case 4
+# A opens a file on FD 3
+# A opens a file on FD 4
+# A grabs an exculsive lock on FD 3
+# A grabs an exclusive lock on FD 4
+# Fails
+# 0 = succesfull, 1 or more = number of contentions
+test4_result=1
+test4(){
+	exec 3>foo.bar
+	exec 4>foo.bar
+	flock -x 3
+	flock -x 4
+}
+
+run() {
+	local tempDir=$(mktemp -d -t sysdig.XXXXXX)
+	sysdig -j "proc.apid=$BASH_PID" >"$tempDir/out.json" & sysdig_pid=$!
+	sleep 0.5
+	("$@")
+	kill "$sysdig_pid"
+	wait
+	java -jar foo.jar "$tempDir/out.json"
+}
+
+
+
+
+
+
+
