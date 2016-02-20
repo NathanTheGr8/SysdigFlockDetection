@@ -1,0 +1,5 @@
+#	Package Files #
+*.jar
+*.war
+*.earava -jar ../LockCheck.jar "$tempDir/out.json"
+
