@@ -66,7 +66,6 @@ run() {
 	local tempDir sysdig_pid
 	tempDir=$(mktemp -d -t sysdig.XXXXXX)
 	sysdig -j "proc.apid=$BASHPID" >"$tempDir/out.json" & sysdig_pid=$!
-	echo "$sysdig_pid"
 	sleep 1
 	(
 		"$@" & testpid=$!
@@ -75,7 +74,7 @@ run() {
 	)
 	kill "$sysdig_pid"
 	wait
-	java -jar ../LockCheck.jar "$tempDir/out.json"
+	java -jar target/deadLockDetection-0.0.1-SNAPSHOT.jar "$tempDir/out.json"
 
 }
 

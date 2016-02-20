@@ -1,5 +1,10 @@
-#	Package Files #
+*.class
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
 *.jar
 *.war
-*.earava -jar ../LockCheck.jar "$tempDir/out.json"
+*.ear
 
