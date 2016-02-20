@@ -16,3 +16,10 @@ dependency-reduced-pom.xml
 #bash products
 bash_scripts/.TestCases.swp
 bash_scripts/foo.bar
+
+#sublime
+sftp-config.json
+
+#eclispe
+.project
+.classpath
