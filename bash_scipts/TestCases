@@ -63,18 +63,20 @@ test4(){
 }
 
 run() {
-	local tempDir=$(mktemp -d -t sysdig.XXXXXX)
-	sysdig -j "proc.apid=$BASH_PID" >"$tempDir/out.json" & sysdig_pid=$!
-	sleep 0.5
-	("$@")
+	local tempDir sysdig_pid
+	tempDir=$(mktemp -d -t sysdig.XXXXXX)
+	sysdig -j "proc.apid=$BASHPID" >"$tempDir/out.json" & sysdig_pid=$!
+	echo "$sysdig_pid"
+	sleep 1
+	(
+		"$@" & testpid=$!
+		sleep 5
+		kill "$testpid"
+	)
 	kill "$sysdig_pid"
 	wait
-	java -jar foo.jar "$tempDir/out.json"
+	java -jar ../LockCheck.jar "$tempDir/out.json"
+
 }
 
-
-
-
-
-
-
+run test1
