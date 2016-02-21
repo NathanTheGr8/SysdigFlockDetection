@@ -192,6 +192,10 @@ public class LockHandler {
 		int resFd = Integer.parseInt( resEvtInfo.substring(resFdPos+4, resOParenPos) );
 		
 		ProcessState procState = procInfoMap.get(pid);
+		if (procState == null){
+			//todo create new process containing source and dest fd, pointing to same handler
+			return;
+		}
 		Handle handle = procState.get(fd);
 		procState.put(resFd, handle);
 		
