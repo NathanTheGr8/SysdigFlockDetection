@@ -33,11 +33,11 @@ public class Handle {
 		return refCount;
 	}
 
-	public int decrementRefCount() throws Exception{
+	public int decrementRefCount() throws NegativeRefCountException{
 		
 		refCount--;
 		if (refCount < 0) {
-			throw new negitiveRefCount("negitive refCount is not valid");
+			throw new NegativeRefCountException("negitive refCount is not valid");
 		}
 
 		return refCount;
