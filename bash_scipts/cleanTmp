@@ -1,0 +1,5 @@
+cleanTmp(){
+	sudo rm -r /tmp/sysdig.*
+}
+
+cleanTmp
