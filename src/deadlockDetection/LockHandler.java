@@ -2,13 +2,40 @@ package deadlockDetection;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import org.json.simple.JSONObject;
 
 public class LockHandler {
-	private static HashMap<String, ArrayList<LockOwner>> lockMap = new HashMap<String, ArrayList<LockOwner>>();
+	private static HashMap<Long, ProcessState> procInfoMap = new HashMap<Long, ProcessState>();
+	private static HashMap<String, LockState> fileLockMap = new HashMap<String, LockState>();
 	
-	public static void flockHandler(JSONObject item, JSONObject itemRes) {
+	private static HashMap<String, ArrayList<Handle>> handleMap = new HashMap<String, ArrayList<Handle>>();
+	
+	public static void openHandler(JSONObject item) {
+		String evtInfo = (String) item.get("evt.info");
+		int fdPos = evtInfo.indexOf("fd=");
+		
+		if( fdPos != -1 ) {
+			int oParenPos = evtInfo.indexOf("("); // (<f>...)
+			int cParenPos = evtInfo.indexOf(")");
+			int fd = Integer.parseInt( evtInfo.substring(fdPos+3, oParenPos) );
+			String file = evtInfo.substring(oParenPos+4, cParenPos);
+			long pid = (Long) item.get("proc.pid");
+			
+			if( !procInfoMap.containsKey(pid) ) {
+				procInfoMap.put(pid, new ProcessState());
+			}
+			
+			if( !handleMap.containsKey(file) ) {
+				Handle handle = new Handle(file);
+				
+			}
+			
+		}
+	}
+	
+	/*public static void flockHandler(JSONObject item, JSONObject itemRes) {
 		String evtInfo = (String) item.get("evt.info");
 		
 		if( evtInfo.indexOf("LOCK_SH") != -1 ) {
@@ -28,23 +55,27 @@ public class LockHandler {
 			int cParenPos = evtInfo.indexOf(")");
 			int fd = Integer.parseInt( evtInfo.substring(fdPos+3, oParenPos) );
 			String file = evtInfo.substring(oParenPos+4, cParenPos);
-			long tid = (Long) item.get("thread.tid");
+			long pid = (Long) item.get("proc.pid");
 			if( successful ) {
 				if( !lockMap.containsKey(file) ) {
 					lockMap.put( file, new ArrayList<LockOwner>() );
 				}
-				LockOwner lockOwner = new LockOwner(fd, tid);
+				LockOwner lockOwner = new LockOwner(fd, pid);
 				lockMap.get(file).add(lockOwner);
 				
-				System.out.format( "thread.tid=%d fd=%d requests for LOCK_SH on %s SUCCESSFUL - lock owner(s) is/are [ ", tid, fd, file);
+				System.out.format( "proc.pid=%d fd=%d flock LOCK_SH %s SUCCESSFUL - lock owner(s) are [ ", pid, fd, file);
 				for(LockOwner ilockOwner : lockMap.get(file) ) {
-					System.out.format( "fd=%d tid=%d; ", ilockOwner.getFd(), ilockOwner.getTid() );
+					System.out.format( "fd=%d pid=%d; ", ilockOwner.getFd(), ilockOwner.getPid() );
 				}
 				System.out.println("]");
+				
+				if( !procMap.containsKey(pid) ) {
+					procMap.put(pid, new ArrayList<String>());
+				}
 			} else {
-				System.out.format( "thread.tid=%d fd=%d requests for LOCK_SH on %s FAILED - lock owner(s) is/are [ ", tid, fd, file);
+				System.out.format( "proc.pid=%d fd=%d flock LOCK_SH %s FAILED - lock owner(s) are [ ", pid, fd, file);
 				for(LockOwner lockOwner : lockMap.get(file) ) {
-					System.out.format( "fd=%d tid=%d; ", lockOwner.getFd(), lockOwner.getTid() );
+					System.out.format( "fd=%d pid=%d; ", lockOwner.getFd(), lockOwner.getPid() );
 				}
 				System.out.println("]");
 			}
@@ -66,18 +97,18 @@ public class LockHandler {
 			int cParenPos = evtInfo.indexOf(")");
 			int fd = Integer.parseInt( evtInfo.substring(fdPos+3, oParenPos) );
 			String file = evtInfo.substring(oParenPos+4, cParenPos);
-			long tid = (Long) item.get("thread.tid");
+			long pid = (Long) item.get("proc.pid");
 			if( successful ) {
 				ArrayList<LockOwner> lockArray = new ArrayList<LockOwner>();
-				LockOwner lockOwner = new LockOwner(fd, tid);
+				LockOwner lockOwner = new LockOwner(fd, pid);
 				lockArray.add(lockOwner);
 				lockMap.put( file, lockArray );
 				
-				System.out.format( "thread.tid=%d fd=%d requests for LOCK_EX on %s SUCCESSFUL\n", tid, fd, file);
+				System.out.format( "proc.pid=%d fd=%d flock LOCK_EX %s SUCCESSFUL\n", pid, fd, file);
 			} else {
-				System.out.format( "thread.tid=%d fd=%d requests for LOCK_EX on %s FAILED - lock owner(s) is/are [ ", tid, fd, file);
+				System.out.format( "proc.pid=%d fd=%d flock LOCK_EX %s FAILED - lock owner(s) are [ ", pid, fd, file);
 				for(LockOwner lockOwner : lockMap.get(file) ) {
-					System.out.format( "fd=%d tid=%d; ", lockOwner.getFd(), lockOwner.getTid() );
+					System.out.format( "fd=%d pid=%d; ", lockOwner.getFd(), lockOwner.getPid() );
 				}
 				System.out.println("]");
 			}
@@ -99,7 +130,7 @@ public class LockHandler {
 			int cParenPos = evtInfo.indexOf(")");
 			int fd = Integer.parseInt( evtInfo.substring(fdPos+3, oParenPos) );
 			String file = evtInfo.substring(oParenPos+4, cParenPos);
-			long tid = (Long) item.get("thread.tid");
+			long pid = (Long) item.get("proc.pid");
 			if( successful ) {
 				for( LockOwner lockOwner : lockMap.get(file) ) {
 					if( fd == lockOwner.getFd() ) {
@@ -107,14 +138,14 @@ public class LockHandler {
 						break;
 					}
 				}
-				System.out.format("thread.tid=%d fd=%d requests for LOCK_UN on %s SUCCESSFUL - lock owner(s) is/are [ ", tid, fd, file);
+				System.out.format("thread.pid=%d fd=%d flock LOCK_UN %s SUCCESSFUL - lock owner(s) are [ ", pid, fd, file);
 				for( LockOwner lockOwner : lockMap.get(file) ) {
-					System.out.format( "fd=%d tid=%d; ", lockOwner.getFd(), lockOwner.getTid() );
+					System.out.format( "fd=%d pid=%d; ", lockOwner.getFd(), lockOwner.getPid() );
 				}
 				System.out.println("]");
 				if( lockMap.get(file).size() == 0 ) lockMap.remove(file);
 			} else {
-				System.out.format("thread.tid=%d fd=%d requests for LOCK_UN on %s FAILED\n", tid, fd, file);
+				System.out.format("proc.pid=%d fd=%d flock LOCK_UN %s FAILED\n", pid, fd, file);
 			}
 			
 		}
@@ -136,12 +167,12 @@ public class LockHandler {
 		int fdPos = evtInfo.indexOf("fd=");
 		int oParenPos = evtInfo.indexOf("("); // (<f>...)
 		int cParenPos = evtInfo.indexOf(")");
+		System.out.println(item);
 		int fd = Integer.parseInt( evtInfo.substring(fdPos+3, oParenPos) );
 		String file = evtInfo.substring(oParenPos+4, cParenPos);
-		long tid = (Long) item.get("thread.tid");
-		System.out.println(file);
-		System.out.println( item );
-		if( file != null ) {
+		long pid = (Long) item.get("proc.pid");
+		//System.out.println(file);
+		if( file.length() > 0 ) {
 			if( successful ) {
 				for( LockOwner lockOwner : lockMap.get(file) ) {
 					if( fd == lockOwner.getFd() ) {
@@ -149,19 +180,61 @@ public class LockHandler {
 						break;
 					}
 				}
-				System.out.format("thread.tid=%d fd=%d closes; unlock on %s SUCCESSFUL - lock owner(s) is/are [ ", tid, fd, file);
+				System.out.format("proc.pid=%d fd=%d close %s SUCCESSFUL - lock owner(s) are [ ", pid, fd, file);
 				for( LockOwner lockOwner : lockMap.get(file) ) {
-					System.out.format( "fd=%d tid=%d; ", lockOwner.getFd(), lockOwner.getTid() );
+					System.out.format( "fd=%d pid=%d; ", lockOwner.getFd(), lockOwner.getPid() );
 				}
 				System.out.println("]");
 				if( lockMap.get(file).size() == 0 ) lockMap.remove(file);
 			} else {
-				System.out.format("thread.tid=%d fd=%d closes; unlock on %s FAILED\n", tid, fd, file);
+				System.out.format("proc.pid=%d fd=%d close %s FAILED\n", pid, fd, file);
 			}
 		}
 	}
 	
 	public static void dupHandler(JSONObject item, JSONObject itemRes) {
+		String evtInfo = (String) item.get("evt.info");
+		int fdPos = evtInfo.indexOf("fd=");
+		int oParenPos = evtInfo.indexOf("("); // (<f>...)
+		int cParenPos = evtInfo.indexOf(")");
+		int fd = Integer.parseInt( evtInfo.substring(fdPos+3, oParenPos) );
+		String file = evtInfo.substring(oParenPos+4, cParenPos);
+		long pid = (Long) item.get("proc.pid");
+		
+		LockOwner lockOwner = new LockOwner(fd, pid);
+		if( !lockMap.containsKey(file) ) {
+			lockMap.put(file, new ArrayList<LockOwner>());
+		}
+		lockMap.get(file).add(lockOwner);
+		
+		System.out.format("proc.pid=%d fd=%d dup %s SUCCESSFUL - lock owner(s) are [ ", pid, fd, file);
+		for( LockOwner iLockOwner : lockMap.get(file) ) {
+			System.out.format("proc.pid=%d fd=%d; ", iLockOwner.getPid(), iLockOwner.getFd());
+		}
+		System.out.println("]");
+		
+		// assumption:
+		// format
+		// fd=3(<f>/home/ubuntu/hello)
+		// res=10(<f>/home/ubuntu/hello)
+		String resEvtInfo = (String) itemRes.get("evt.info");
+		int resFdPos = resEvtInfo.indexOf("res=");
+		int resOParenPos = resEvtInfo.indexOf("(");
+		int resFd = Integer.parseInt( resEvtInfo.substring(resFdPos+4, resOParenPos) );
+		long resPid = (Long) itemRes.get("proc.pid");
+		
+		lockOwner = new LockOwner(resFd, resPid);
+		lockMap.get(file).add(lockOwner);
+		
+		System.out.format("proc.pid=%d fd=%d dup %s SUCCESSFUL - lock owner(s) are [ ", resPid, resFd, file);
+		for( LockOwner iLockOwner : lockMap.get(file) ) {
+			System.out.format("proc.pid=%d fd=%d; ", iLockOwner.getPid(), iLockOwner.getFd());
+		}
+		System.out.println("]");
 		
 	}
+	
+	public static void cloneHandler() {
+		
+	}*/
 }
