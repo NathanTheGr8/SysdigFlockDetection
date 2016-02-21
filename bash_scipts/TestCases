@@ -96,7 +96,7 @@ test6(){
 	flock -x 4
 }
 
-run() {
+runOne() {
 	local tempDir sysdig_pid desired_result_varname desired_result
 	desired_result_varname="${1}_result"
 	desired_result=${!desired_result_varname}
@@ -104,6 +104,7 @@ run() {
 	sysdig -j "proc.pid=$BASHPID or proc.apid=$BASHPID" >"$tempDir/out.json" & sysdig_pid=$!
 	while [ ! -s "$tempDir/out.json" ]; do sleep 0.5; done
 	(
+		cd "$tempDir" || exit
 		"$@" & testpid=$!
 		sleep 5
 		kill "$testpid"
@@ -114,5 +115,11 @@ run() {
 
 }
 
-run test1
+run() {
+	for arg; do
+		runOne "$arg"
+	done
+}
+
+run test{1..6}
 
