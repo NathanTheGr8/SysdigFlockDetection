@@ -96,8 +96,9 @@ test6(){
 	flock -x 4
 }
 
-runOne() {
-	local tempDir sysdig_pid desired_result_varname desired_result
+genOne() {
+	local tempDir sysdig_pid desired_result_varname desired_result outFile
+	outFile=$1; shift
 	desired_result_varname="${1}_result"
 	desired_result=${!desired_result_varname}
 	tempDir=$(mktemp -d -t sysdig.XXXXXX)
@@ -111,15 +112,32 @@ runOne() {
 	)
 	kill "$sysdig_pid"
 	wait
-	java -jar target/deadLockDetection-0.0.1-SNAPSHOT.jar "$tempDir/out.json"
-
+	cp "$tempDir/out.json" "$outFile"
 }
 
-run() {
+runOne() {
+	local inFile=$1; shift
+	java -jar target/deadLockDetection-0.0.1-SNAPSHOT.jar "$inFile" "$@"
+}
+
+gen() {
+	outDir=$1; shift
+	mkdir -p "$outDir" || exit
 	for arg; do
-		runOne "$arg"
+		genOne "$outDir/$arg.json" "$arg"
 	done
 }
 
-run test{1..6}
+runAll() {
+	local dir=$1; shift
+	for f in "$dir"/*; do
+		runOne "$f" "$@"
+	done
+}
 
+mkdir -p jsonFiles
+if [[ $UID = 0 ]] && type -P sysdig >/dev/null 2>/dev/null; then
+	gen jsonFiles test{1..6}
+fi
+
+runAll jsonFiles
