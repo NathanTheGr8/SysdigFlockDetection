@@ -10,7 +10,7 @@ public class LockHandler {
 	private static HashMap<Long, ProcessState> procInfoMap = new HashMap<Long, ProcessState>();
 	private static HashMap<String, LockState> fileLockMap = new HashMap<String, LockState>();
 	
-	private static HashMap<String, ArrayList<Handle>> handleMap = new HashMap<String, ArrayList<Handle>>();
+	private static HashMap<String, Integer> handleCount = new HashMap<String, Integer>();
 	
 	public static void openHandler(JSONObject item) {
 		String evtInfo = (String) item.get("evt.info");
@@ -27,11 +27,11 @@ public class LockHandler {
 				procInfoMap.put(pid, new ProcessState());
 			}
 			
-			if( !handleMap.containsKey(file) ) {
-				Handle handle = new Handle(file);
-				
+			if( !handleCount.containsKey(file) ) {
+				handleCount.put(file, 1);
 			}
 			
+			// More code here
 		}
 	}
 	
@@ -57,8 +57,8 @@ public class LockHandler {
 			String file = evtInfo.substring(oParenPos+4, cParenPos);
 			long pid = (Long) item.get("proc.pid");
 			if( successful ) {
-				if( !lockMap.containsKey(file) ) {
-					lockMap.put( file, new ArrayList<LockOwner>() );
+				if( !fileLockMap.containsKey(file) ) {
+					fileLockMap.put( file, new HashSet<LockOwner>() );
 				}
 				LockOwner lockOwner = new LockOwner(fd, pid);
 				lockMap.get(file).add(lockOwner);
@@ -151,7 +151,7 @@ public class LockHandler {
 		}
 	}
 	
-	public static void closeHandler(JSONObject item, JSONObject itemRes) {
+	/*public static void closeHandler(JSONObject item, JSONObject itemRes) {
 		String evtInfo = (String) item.get("evt.info");
 		
 		boolean successful = true;
