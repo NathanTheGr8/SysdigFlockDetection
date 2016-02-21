@@ -180,10 +180,8 @@ public class LockHandler {
 	}
 	
 	public static void dupHandler(JSONObject item, JSONObject itemRes) {
-		String evtInfo = (String) item.get("evt.info");
-		int fdPos = evtInfo.indexOf("fd=");
-		int oParenPos = evtInfo.indexOf("("); // (<f>...)
-		int fd = Integer.parseInt( evtInfo.substring(fdPos+3, oParenPos) );
+		int fdSource = (Integer) item.get("fd.num");
+		int fdDest = (Integer) itemRes.get("fd.num");
 		long pid = (Long) item.get("proc.pid");
 		
 		String resEvtInfo = (String) itemRes.get("evt.info");
@@ -191,15 +189,23 @@ public class LockHandler {
 		int resOParenPos = resEvtInfo.indexOf("("); // (<f>...)
 		int resFd = Integer.parseInt( resEvtInfo.substring(resFdPos+4, resOParenPos) );
 		
+		Handle handle;
+		
 		ProcessState procState = procInfoMap.get(pid);
 		if (procState == null){
 			//todo create new process containing source and dest fd, pointing to same handler
-			return;
+			
+			handle = new Handle("<UNKNOWN>");
+			procState = new ProcessState();
+			procState.put(fdSource, handle);
+			procState.put(fdDest, handle);
+			procInfoMap.put(pid, procState);
+		} else {
+			handle = procState.get(fdSource);
+			procState.put(fdDest, handle);
 		}
-		Handle handle = procState.get(fd);
-		procState.put(resFd, handle);
 		
-		System.out.format("dup SUCCESSFUL pid=%d fd=%d resFd=%d file=%s\n", pid, fd, resFd, handle.getName());
+		System.out.format("dup SUCCESSFUL pid=%d fd=%d resFd=%d file=%s\n", pid, fdSource, fdDest, handle.getName());
 	}
 	
 	public static void cloneHandler(JSONObject item) {

@@ -5,6 +5,12 @@ public class Handle {
 	private int id;
 	private int refCount = 1;
 	
+	private static int nextId = 1;
+	
+	public Handle(String name) {
+		this(name, nextId++);
+	}
+	
 	public Handle(String name, int id) {
 		this.fileName = name;
 		this.id = id;

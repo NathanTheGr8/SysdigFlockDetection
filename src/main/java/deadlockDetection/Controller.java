@@ -1,6 +1,7 @@
 package deadlockDetection;
 
 import java.io.FileReader;
+import java.util.HashMap;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -30,8 +31,24 @@ public class Controller {
 	}
 	
 	private static int handleItem(JSONArray itemList, int index) {
+		HashMap<Integer, JSONObject> syscallsByThread = new HashMap<Integer, JSONObject>();
 		JSONObject item = (JSONObject) itemList.get(index);
 		String evtType = (String) item.get("evt.type");
+		String evtDir = (String) item.get("evt.dir");
+		Integer evtPid = (Integer)item.get("proc.pid");
+		JSONObject inCall = null;
+		
+		if(evtDir == ">") {
+			syscallsByThread.put(evtPid, item);
+			if(evtType == "flock") {
+				//lockHandler.flockHandlerIn(item); // TODO: Need to detect hangs when flock called but does not return
+			}
+			return 1; //?
+		} else {
+			inCall = syscallsByThread.get(evtPid);
+			syscallsByThread.remove(evtPid);
+		}
+
 		if( evtType.equals("open") ) {
 			lockHandler.openHandler(item);
 		} else if( evtType.equals("close") ) {
@@ -40,12 +57,10 @@ public class Controller {
 		} else if( evtType.equals("clone") ) {
 			lockHandler.cloneHandler(item);
 		} else if( evtType.equals("dup") ) {
-			JSONObject itemRes = (JSONObject) itemList.get(index+1);
-			lockHandler.dupHandler(item, itemRes);
+			lockHandler.dupHandler(inCall, item);
 			return 1;
 		} else if( evtType.equals("flock") ) {
-			JSONObject itemRes = (JSONObject) itemList.get(index+1);
-			//lockHandler.flockHandler(item, itemRes);
+			lockHandler.flockHandler(inCall, item);
 			return 1;
 		} else if( evtType.equals("procexit") ) {
 			lockHandler.procexitHandler(item);
