@@ -28,7 +28,7 @@ public class Handle {
 		return refCount;
 	}
 
-	public int decrementRefCount(){
+	public int decrementRefCount() throws Exception{
 		
 		refCount--;
 		if (refCount < 0) {
