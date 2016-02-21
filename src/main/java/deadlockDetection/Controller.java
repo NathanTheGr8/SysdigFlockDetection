@@ -17,11 +17,7 @@ public class Controller {
 			JSONArray itemList = (JSONArray) parser.parse(new FileReader(file) );
 			
 			for(int i=0, length=itemList.size(); i<length; i++) {
-				JSONObject item = (JSONObject) itemList.get(i);
-				String procName = (String) item.get("proc.name");
-				//if( !procName.equals("vminfo") ) {
-					i += handleItem(itemList, i);
-				//}
+				i += handleItem(itemList, i);
 			}
 			
 		} catch(Exception e) {
