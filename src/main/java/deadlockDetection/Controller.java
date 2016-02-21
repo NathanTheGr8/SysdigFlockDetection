@@ -19,9 +19,9 @@ public class Controller {
 			for(int i=0, length=itemList.size(); i<length; i++) {
 				JSONObject item = (JSONObject) itemList.get(i);
 				String procName = (String) item.get("proc.name");
-				if( !procName.equals("vminfo") ) {
+				//if( !procName.equals("vminfo") ) {
 					i += handleItem(itemList, i);
-				}
+				//}
 			}
 			
 		} catch(Exception e) {
@@ -36,7 +36,6 @@ public class Controller {
 			lockHandler.openHandler(item);
 		} else if( evtType.equals("close") ) {
 			lockHandler.closeHandler(item);
-			return 1;
 		} else if( evtType.equals("clone") ) {
 			lockHandler.cloneHandler(item);
 		} else if( evtType.equals("dup") ) {
@@ -45,7 +44,7 @@ public class Controller {
 			return 1;
 		} else if( evtType.equals("flock") ) {
 			JSONObject itemRes = (JSONObject) itemList.get(index+1);
-			//lockHandler.flockHandler(item, itemRes);
+			lockHandler.flockHandler(item, itemRes);
 			return 1;
 		} else if( evtType.equals("procexit") ) {
 			lockHandler.procexitHandler(item);
