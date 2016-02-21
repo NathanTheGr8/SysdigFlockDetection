@@ -96,14 +96,15 @@ test6(){
 	flock -x 4
 }
 
-run() {
+runOne() {
 	local tempDir sysdig_pid desired_result_varname desired_result
 	desired_result_varname="${1}_result"
 	desired_result=${!desired_result_varname}
 	tempDir=$(mktemp -d -t sysdig.XXXXXX)
-	sysdig -j "proc.pid=$BASHPID or proc.apid=$BASHPID" >"$tempDir/out.json" & sysdig_pid=$!
+	sysdig -j "proc.pid=$BASHPID or proc.apid=$BASHPID or evt.type=clone or evt.type=fork or evt.type=close or evt.type=dup or evt.type=flock or evt.type=procexit" -p '%evt.num %evt.time %evt.cpu %proc.name %evt.dir %evt.type %proc.ppid %proc.pid'>"$tempDir/out.json" & sysdig_pid=$!
 	while [ ! -s "$tempDir/out.json" ]; do sleep 0.5; done
 	(
+		cd "$tempDir" || exit
 		"$@" & testpid=$!
 		sleep 5
 		kill "$testpid"
@@ -114,5 +115,11 @@ run() {
 
 }
 
-run test1
+run() {
+	for arg; do
+		runOne "$arg"
+	done
+}
+
+run test{1..6}
 

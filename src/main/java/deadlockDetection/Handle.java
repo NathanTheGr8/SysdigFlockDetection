@@ -17,12 +17,29 @@ public class Handle {
 	public void increRefCount() {
 		refCount++;
 	}
-	
-	public void decreRefCount() {
-		refCount--;
-	}
-	
 	public boolean isZero() {
 		return refCount == 0;
+	}
+
+	public String getFileName (){
+		return fileName;
+	}
+
+	public int getID(){
+		return id;
+	}
+
+	public int getRefCount (){
+		return refCount;
+	}
+
+	public int decrementRefCount() throws Exception{
+		
+		refCount--;
+		if (refCount < 0) {
+			throw new negitiveRefCount("negitive refCount is not valid");
+		}
+
+		return refCount;
 	}
 }
