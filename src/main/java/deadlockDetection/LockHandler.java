@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-
 import java.util.Iterator;
 
 import org.json.simple.JSONObject;
@@ -179,48 +178,6 @@ public class LockHandler {
 		}
 	}
 	
-	/*public static void closeHandler(JSONObject item, JSONObject itemRes) {
-		String evtInfo = (String) item.get("evt.info");
-		
-		boolean successful = true;
-		String resEvtInfo = (String) itemRes.get("evt.info");
-		int resPos = resEvtInfo.indexOf("res=");
-		// assumption: if the next line is not a res, request is unsuccessful
-		if( resPos == -1 ) successful = false;
-		if( successful ) {
-			int res = Integer.parseInt( resEvtInfo.substring(resPos+4, resEvtInfo.length()-1 ) );
-			if( res != 0 ) successful = false;
-		}
-		
-		int fdPos = evtInfo.indexOf("fd=");
-		int oParenPos = evtInfo.indexOf("("); // (<f>...)
-		int cParenPos = evtInfo.indexOf(")");
-		System.out.println(item);
-		int fd = Integer.parseInt( evtInfo.substring(fdPos+3, oParenPos) );
-		String file = evtInfo.substring(oParenPos+4, cParenPos);
-		long pid = (Long) item.get("proc.pid");
-		//System.out.println(file);
-		if( file.length() > 0 ) {
-			if( successful ) {
-				for( LockOwner lockOwner : lockMap.get(file) ) {
-					if( fd == lockOwner.getFd() ) {
-						lockMap.get(file).remove(lockOwner);
-						break;
-					}
-				}
-				System.out.format("proc.pid=%d fd=%d close %s SUCCESSFUL - lock owner(s) are [ ", pid, fd, file);
-				for( LockOwner lockOwner : lockMap.get(file) ) {
-					System.out.format( "fd=%d pid=%d; ", lockOwner.getFd(), lockOwner.getPid() );
-				}
-				System.out.println("]");
-				if( lockMap.get(file).size() == 0 ) lockMap.remove(file);
-			} else {
-				System.out.format("proc.pid=%d fd=%d close %s FAILED\n", pid, fd, file);
-			}
-		}
-	}
-	*/
-	
 	public static void dupHandler(JSONObject item, JSONObject itemRes) {
 		String evtInfo = (String) item.get("evt.info");
 		int fdPos = evtInfo.indexOf("fd=");
@@ -243,6 +200,9 @@ public class LockHandler {
 	public static void cloneHandler(JSONObject item) {
 		long pid = (Long) item.get("proc.pid");
 		long ppid = (Long) item.get("proc.ppid");
+		String evtInfo = (String) item.get("evt.info");
+		
+		if( evtInfo.indexOf("res=") != -1 ) return;
 		
 		if( !procInfoMap.containsKey(ppid) ) {
 			procInfoMap.put(ppid, new ProcessState());
@@ -266,7 +226,11 @@ public class LockHandler {
 		
 		Collection<Handle> values = procState.getValues();
 		for( Handle handle : values ) {
-			handle.decreRefCount();
+			try {
+				handle.decrementRefCount();
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
 			
 			if( handle.isZero()
 				&& fileLockMap.containsKey(handle.getName()) ) {
