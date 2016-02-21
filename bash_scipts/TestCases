@@ -101,7 +101,7 @@ runOne() {
 	desired_result_varname="${1}_result"
 	desired_result=${!desired_result_varname}
 	tempDir=$(mktemp -d -t sysdig.XXXXXX)
-	sysdig -j "proc.pid=$BASHPID or proc.apid=$BASHPID" >"$tempDir/out.json" & sysdig_pid=$!
+	sysdig -j "proc.pid=$BASHPID or proc.apid=$BASHPID" -p '%evt.num %evt.time %evt.cpu %proc.name %evt.dir %evt.type %proc.ppid %proc.pid' >"$tempDir/out.json" & sysdig_pid=$!
 	while [ ! -s "$tempDir/out.json" ]; do sleep 0.5; done
 	(
 		cd "$tempDir" || exit
@@ -121,5 +121,6 @@ run() {
 	done
 }
 
-run test{1..6}
+run test{1}
+#..6}
 
