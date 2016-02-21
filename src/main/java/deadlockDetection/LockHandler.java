@@ -1,8 +1,11 @@
 package deadlockDetection;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+
+import java.util.Iterator;
 
 import org.json.simple.JSONObject;
 
@@ -29,17 +32,45 @@ public class LockHandler {
 			
 			if( !handleCount.containsKey(file) ) {
 				handleCount.put(file, 1);
+			} else {
+				int count = handleCount.get(file) + 1;
+				handleCount.put(file, count);
 			}
 			
-			// More code here
+			Handle handle = new Handle(file, handleCount.get(file));
+			ProcessState procState = procInfoMap.get(pid);
+			procState.put(fd, handle);
+			
+			System.out.format("open SUCCESSFUL pid=%d fd=%d fh=%d file=%s\n", pid, fd, handleCount.get(file), file);
 		}
 	}
 	
-	/*public static void flockHandler(JSONObject item, JSONObject itemRes) {
+	public static void closeHandler(JSONObject item) {
+		String evtInfo = (String) item.get("evt.info");
+		int fdPos = evtInfo.indexOf("fd=");
+		int oParenPos = evtInfo.indexOf("("); // (<f>...)
+		
+		if( fdPos != -1 && oParenPos != -1 ) {
+			int cParenPos = evtInfo.indexOf(")");
+			int fd = Integer.parseInt( evtInfo.substring(fdPos+3, oParenPos) );
+			String file = evtInfo.substring(oParenPos+4, cParenPos);
+			long pid = (Long) item.get("proc.pid");
+			
+			ProcessState procState = procInfoMap.get(pid);
+			if( procState != null ) {
+				procState.remove(fd);
+				
+				System.out.format("close SUCCESSFUL pid=%d fd=%d\n", pid, fd);
+			}
+			
+		}
+	}
+	
+	public static void flockHandler(JSONObject item, JSONObject itemRes) {
 		String evtInfo = (String) item.get("evt.info");
 		
 		if( evtInfo.indexOf("LOCK_SH") != -1 ) {
-			
+			/*
 			boolean successful = true;
 			String resEvtInfo = (String) itemRes.get("evt.info");
 			int resPos = resEvtInfo.indexOf("res=");
@@ -79,10 +110,10 @@ public class LockHandler {
 				}
 				System.out.println("]");
 			}
-			
+			*/
 		} else if( evtInfo.indexOf("LOCK_EX") != -1 ) {
 			
-			boolean successful = true;
+			/*boolean successful = true;
 			String resEvtInfo = (String) itemRes.get("evt.info");
 			int resPos = resEvtInfo.indexOf("res=");
 			// assumption: if the next line is not a res, request is unsuccessful
@@ -99,10 +130,7 @@ public class LockHandler {
 			String file = evtInfo.substring(oParenPos+4, cParenPos);
 			long pid = (Long) item.get("proc.pid");
 			if( successful ) {
-				ArrayList<LockOwner> lockArray = new ArrayList<LockOwner>();
-				LockOwner lockOwner = new LockOwner(fd, pid);
-				lockArray.add(lockOwner);
-				lockMap.put( file, lockArray );
+				
 				
 				System.out.format( "proc.pid=%d fd=%d flock LOCK_EX %s SUCCESSFUL\n", pid, fd, file);
 			} else {
@@ -111,10 +139,10 @@ public class LockHandler {
 					System.out.format( "fd=%d pid=%d; ", lockOwner.getFd(), lockOwner.getPid() );
 				}
 				System.out.println("]");
-			}
+			}*/
 			
 		} else if( evtInfo.indexOf("LOCK_UN") != -1 ) {
-			
+			/*
 			boolean successful = true;
 			String resEvtInfo = (String) itemRes.get("evt.info");
 			int resPos = resEvtInfo.indexOf("res=");
@@ -147,7 +175,7 @@ public class LockHandler {
 			} else {
 				System.out.format("proc.pid=%d fd=%d flock LOCK_UN %s FAILED\n", pid, fd, file);
 			}
-			
+			*/
 		}
 	}
 	
@@ -191,50 +219,66 @@ public class LockHandler {
 			}
 		}
 	}
+	*/
 	
 	public static void dupHandler(JSONObject item, JSONObject itemRes) {
 		String evtInfo = (String) item.get("evt.info");
 		int fdPos = evtInfo.indexOf("fd=");
 		int oParenPos = evtInfo.indexOf("("); // (<f>...)
-		int cParenPos = evtInfo.indexOf(")");
 		int fd = Integer.parseInt( evtInfo.substring(fdPos+3, oParenPos) );
-		String file = evtInfo.substring(oParenPos+4, cParenPos);
 		long pid = (Long) item.get("proc.pid");
 		
-		LockOwner lockOwner = new LockOwner(fd, pid);
-		if( !lockMap.containsKey(file) ) {
-			lockMap.put(file, new ArrayList<LockOwner>());
-		}
-		lockMap.get(file).add(lockOwner);
-		
-		System.out.format("proc.pid=%d fd=%d dup %s SUCCESSFUL - lock owner(s) are [ ", pid, fd, file);
-		for( LockOwner iLockOwner : lockMap.get(file) ) {
-			System.out.format("proc.pid=%d fd=%d; ", iLockOwner.getPid(), iLockOwner.getFd());
-		}
-		System.out.println("]");
-		
-		// assumption:
-		// format
-		// fd=3(<f>/home/ubuntu/hello)
-		// res=10(<f>/home/ubuntu/hello)
 		String resEvtInfo = (String) itemRes.get("evt.info");
 		int resFdPos = resEvtInfo.indexOf("res=");
-		int resOParenPos = resEvtInfo.indexOf("(");
+		int resOParenPos = resEvtInfo.indexOf("("); // (<f>...)
 		int resFd = Integer.parseInt( resEvtInfo.substring(resFdPos+4, resOParenPos) );
-		long resPid = (Long) itemRes.get("proc.pid");
 		
-		lockOwner = new LockOwner(resFd, resPid);
-		lockMap.get(file).add(lockOwner);
+		ProcessState procState = procInfoMap.get(pid);
+		Handle handle = procState.get(fd);
+		procState.put(resFd, handle);
 		
-		System.out.format("proc.pid=%d fd=%d dup %s SUCCESSFUL - lock owner(s) are [ ", resPid, resFd, file);
-		for( LockOwner iLockOwner : lockMap.get(file) ) {
-			System.out.format("proc.pid=%d fd=%d; ", iLockOwner.getPid(), iLockOwner.getFd());
-		}
-		System.out.println("]");
-		
+		System.out.format("dup SUCCESSFUL pid=%d fd=%d resFd=%d file=%s\n", pid, fd, resFd, handle.getName());
 	}
 	
-	public static void cloneHandler() {
+	public static void cloneHandler(JSONObject item) {
+		long pid = (Long) item.get("proc.pid");
+		long ppid = (Long) item.get("proc.ppid");
 		
-	}*/
+		if( !procInfoMap.containsKey(ppid) ) {
+			procInfoMap.put(ppid, new ProcessState());
+		}
+		
+		ProcessState pprocState = procInfoMap.get(ppid);
+		
+		Collection<Handle> values = pprocState.getValues();
+		for( Handle handle : values ) {
+			handle.increRefCount();
+		}
+		
+		procInfoMap.put(pid, pprocState);
+		
+		System.out.format("clone SUCCESSFUL pid=%d ppid=%d\n", pid, ppid);
+	}
+	
+	public static void procexitHandler(JSONObject item) {
+		long pid = (Long) item.get("proc.pid");
+		ProcessState procState = procInfoMap.get(pid);
+		
+		Collection<Handle> values = procState.getValues();
+		for( Handle handle : values ) {
+			handle.decreRefCount();
+			
+			if( handle.isZero()
+				&& fileLockMap.containsKey(handle.getName()) ) {
+				LockState lockState = fileLockMap.get(handle.getName());
+				if( lockState.contains(handle) ) {
+					lockState.remove(handle);
+				}
+			}
+		}
+		
+		procInfoMap.remove(pid);
+		
+		System.out.format("procexit SUCCESSFUL pid=%d\n", pid);
+	}
 }

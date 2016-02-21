@@ -17,7 +17,11 @@ public class Controller {
 			JSONArray itemList = (JSONArray) parser.parse(new FileReader(file) );
 			
 			for(int i=0, length=itemList.size(); i<length; i++) {
-				i += handleItem(itemList, i);
+				JSONObject item = (JSONObject) itemList.get(i);
+				String procName = (String) item.get("proc.name");
+				if( !procName.equals("vminfo") ) {
+					i += handleItem(itemList, i);
+				}
 			}
 			
 		} catch(Exception e) {
@@ -31,23 +35,20 @@ public class Controller {
 		if( evtType.equals("open") ) {
 			lockHandler.openHandler(item);
 		} else if( evtType.equals("close") ) {
-			JSONObject itemRes = (JSONObject) itemList.get(index+1);
-			//lockHandler.closeHandler(item, itemRes);
+			lockHandler.closeHandler(item);
 			return 1;
 		} else if( evtType.equals("clone") ) {
-			
-		} else if( evtType.equals("fork") ) {
-			
+			lockHandler.cloneHandler(item);
 		} else if( evtType.equals("dup") ) {
 			JSONObject itemRes = (JSONObject) itemList.get(index+1);
-			//lockHandler.dupHandler(item, itemRes);
+			lockHandler.dupHandler(item, itemRes);
 			return 1;
 		} else if( evtType.equals("flock") ) {
 			JSONObject itemRes = (JSONObject) itemList.get(index+1);
 			//lockHandler.flockHandler(item, itemRes);
 			return 1;
 		} else if( evtType.equals("procexit") ) {
-			
+			lockHandler.procexitHandler(item);
 		}
 		
 		return 0;
