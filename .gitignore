@@ -1,0 +1,25 @@
+*.class
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# Maven Build Products
+target
+dependency-reduced-pom.xml
+
+
+#bash products
+bash_scripts/.TestCases.swp
+bash_scripts/foo.bar
+
+#sublime
+sftp-config.json
+
+#eclispe
+.project
+.classpath

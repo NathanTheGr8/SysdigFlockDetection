@@ -62,19 +62,57 @@ test4(){
 	flock -x 4
 }
 
-run() {
-	local tempDir=$(mktemp -d -t sysdig.XXXXXX)
-	sysdig -j "proc.apid=$BASH_PID" >"$tempDir/out.json" & sysdig_pid=$!
-	sleep 0.5
-	("$@")
-	kill "$sysdig_pid"
-	wait
-	java -jar foo.jar "$tempDir/out.json"
+# Test Case 5
+# A opens a file on FD 3
+# A grabs an exculsive lock on FD 3
+# A closes
+# B opens same file
+# B grabs lock
+# Succeeds
+# 0 = succesfull, 1 or more = number of contentions
+test5_result=0
+test5(){
+	exec 3>foo.bar
+	flock -x 3
+	exec 3>&-
+	exec 4>foo.bar
+	flock -x 4
 }
 
+# Test Case 6
+# A opens a file on FD 3
+# A opens a file on FD 4
+# A grabs an exculsive lock on FD 3
+# A grabs an exclusive lock on FD 4
+# Fails
+# 0 = succesfull, 1 or more = number of contentions
+test6_result=1
+test6(){
+	exec 3>foo.bar
+	flock -x 3
+	sleep 10 &
+	exec 3>&-
+	exec 4>foo.bar
+	flock -x 4
+}
 
+run() {
+	local tempDir sysdig_pid desired_result_varname desired_result
+	desired_result_varname="${1}_result"
+	desired_result=${!desired_result_varname}
+	tempDir=$(mktemp -d -t sysdig.XXXXXX)
+	sysdig -j "proc.pid=$BASHPID or proc.apid=$BASHPID" >"$tempDir/out.json" & sysdig_pid=$!
+	while [ ! -s "$tempDir/out.json" ]; do sleep 0.5; done
+	(
+		"$@" & testpid=$!
+		sleep 5
+		kill "$testpid"
+	)
+	kill "$sysdig_pid"
+	wait
+	java -jar target/deadLockDetection-0.0.1-SNAPSHOT.jar "$tempDir/out.json"
 
+}
 
-
-
+run test1
 
