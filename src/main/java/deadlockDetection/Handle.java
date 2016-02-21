@@ -23,11 +23,18 @@ public class Handle {
 		return refCount;
 	}
 
-	public void incrementRefCount(){
+	public int incrementRefCount(){
 		refCount++;
+		return refCount;
 	}
 
-	public void decrementRefCount(){
+	public int decrementRefCount(){
+		
 		refCount--;
+		if (refCount < 0) {
+			throw new negitiveRefCount("negitive refCount is not valid");
+		}
+
+		return refCount;
 	}
 }
